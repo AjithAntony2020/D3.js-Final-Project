@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.8/d3.min.js" type="text/JavaScript"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Spectral|Rubik">
+  <link rel="stylesheet" type="text/css" href="main.css" />
+  <script src="https://d3js.org/d3-geo-projection.v1.min.js"></script>
+  <style>
+    svg {
+      display: block;
+      margin: auto;
+    }
+  </style>
+  <title>Olympics</title>
+  <h1>Olympics stats</h1>
+</head>
+
+<body>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="bar-chart.html">Bar chart</a></li>
+    <li><a href="lollipopper.html">Lollipop Graph</a></li>
+    <li><a href="Global.html">Globe Graph</a></li>
+    <li style="float:right"><a href="about.html">About</a></li>
+  </ul>
+  <div>
+    <h4>Olympics Venues (zoom, pan, hover)</h4>
+  </div>
+ <svg style="width: 800px;height: 600px; background-color:#6691c0; float: inherit"></svg>
+ 
+  <script>
+    var PromiseWrapper = (xhr, d) => new Promise(resolve => xhr(d, (p) => resolve(p)))
+    Promise.all([PromiseWrapper(d3.json, "world.geojson"),
+    PromiseWrapper(d3.csv, "./olympics.csv")])
+      .then(resolve => {
+        createMap(resolve[0], resolve[1])
+      })
+
+    function createMap(countries, olympics) {
+      var projection = d3.geoMollweide()
+        .scale(170)
+        .translate([350, 300]);
+      var geoPath = d3.geoPath()
+        .projection(projection);
+      d3.select("svg")
+        .selectAll("path")
+        .data(countries.features)
+        .enter()
+        .append("path")
+        .attr("class", "countries")
+        .attr("d", geoPath)
+
+
+
+      const zoom = d3.zoom()
+      .scaleExtent([1, 8])
+      .on('zoom', zoomed);
+
+
+      d3.select("svg").call(zoom);
+
+      d3.select("svg")
+        .selectAll("circle")
+        .data(olympics)
+        .enter()
+        .append("circle")
+        .attr("class", "olympics")
+        .attr("r", 0)
+        .attr("cx", d => projection([d.x, d.y])[0])
+        .attr("cy", d => projection([d.x, d.y])[1])
+        .style("fill", function (d) { if (d.Type == "Summer") return "red"; else return "yellow"; })
+
+
+      d3.select("svg")
+        .selectAll("circle")
+        .transition()
+        .duration(2000)
+        .attr("r", 12)
+        .transition()
+        .duration(2000)
+        .attr("r", 5)
+
+
+           //Our new hover effects
+           var div = d3.select("body").append("div")
+              .attr("class", "tooltip")
+              .style("opacity", 0);
+
+
+     d3.select("svg")
+     .selectAll("circle")
+     .on('mouseover', function (d,i) {
+
+          d3.select(this).transition()
+               .duration('50')
+               .attr('opacity', '.85');
+              
+               div.transition()
+               .duration(50)
+               .style("opacity", '1');
+
+
+
+               div.html(d.Games)
+               .style("left", (d3.event.pageX + 10) + "px")
+     .style("top", (d3.event.pageY - 15) + "px");
+
+              
+              })
+      .on('mouseout', function (d,i) {
+
+          d3.select(this).transition()
+               .duration('50')
+               .attr('opacity', '1');
+          //Makes the new div disappear:
+          div.transition()
+               .duration('50')
+               .style("opacity", '0');
+     });
+
+
+
+
+
+    }
+
+
+    function zoomed() {
+      d3.select("svg")
+        .selectAll('path') // To prevent stroke width from scaling
+        .attr('transform', d3.event.transform);
+
+        d3.select("svg")
+        .selectAll('circle') // To prevent stroke width from scaling
+        .attr('transform', d3.event.transform);
+
+        d3.select("svg")
+        .selectAll('text') // To prevent stroke width from scaling
+        .attr('transform', d3.event.transform);
+
+
+    }
+  </script>
+  <div>
+    <div style="background-color: red;width: 100px;">Summer</div>
+    <div style="background-color: yellow;width: 100px;">Winter</div>
+  </div>
+  <div>
+    <footer>
+      Olympics<br>
+      Reference:<a href="https://data.world/sports/olympics"> Click Here To Know More. </a>
+    </footer>
+  </div>
+</body>
+
+</html>
